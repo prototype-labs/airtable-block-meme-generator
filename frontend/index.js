@@ -3,6 +3,7 @@ import {
   useBase,
   useRecords,
   useGlobalConfig,
+  useSettingsButton,
   Loader,
   Button,
   Box,
@@ -12,15 +13,30 @@ import {
   FieldPickerSynced,
   ViewPickerSynced,
 } from "@airtable/blocks/ui";
+import { viewport } from "@airtable/blocks";
+
 import { FieldType } from "@airtable/blocks/models";
 import React, { Fragment, useState } from "react";
 const url = require("url");
 var cloudinary = require("cloudinary/lib/cloudinary").v2;
 var removeBgApiKey, cloudinaryUrl, memeField, memeFieldId;
 
+viewport.addMinSize({
+  height: 260,
+  width: 400,
+});
+
 const MAX_RECORDS_PER_UPDATE = 50;
 
 function MemeGeneratorBlock() {
+  const [isSettingsVisible, setIsSettingsVisible] = useState(false);
+  useSettingsButton(() => {
+    if (!isSettingsVisible) {
+      viewport.enterFullscreenIfPossible();
+    }
+    setIsSettingsVisible(!isSettingsVisible);
+  });
+
   const base = useBase();
   const globalConfig = useGlobalConfig();
 
@@ -94,7 +110,7 @@ function MemeGeneratorBlock() {
       <FormField label="View">
         <ViewPickerSynced table={table} globalConfigKey="selectedViewId" />
       </FormField>
-      <FormField label="Image Field">
+      <FormField label="Foreground Image Field">
         <FieldPickerSynced
           table={table}
           globalConfigKey="imageFieldId"
@@ -121,7 +137,7 @@ function MemeGeneratorBlock() {
         />
       </FormField>
 
-      <FormField label="Meme Field">
+      <FormField label="Meme Output Field">
         <FieldPickerSynced
           table={table}
           globalConfigKey="memeFieldId"
@@ -144,7 +160,6 @@ function MemeGeneratorBlock() {
           width="630px"
         />
       </FormField>
-
       {isUpdateInProgress ? (
         <Loader />
       ) : (
@@ -154,8 +169,11 @@ function MemeGeneratorBlock() {
             onClick={onButtonClick}
             disabled={!permissionCheck.hasPermission}
             marginBottom={3}
+            marginTop={3}
+            size="large"
+            width="300px"
           >
-            Update Images
+            Generate Meme
           </Button>
           {!permissionCheck.hasPermission &&
             permissionCheck.reasonDisplayString}
@@ -220,47 +238,63 @@ async function getImageUpdatesAsync(
       console.log({ editedImage });
       const encodedMemeText = encodeURI(memeText);
 
-      const cloudinaryOptions = {
-        crop: "pad",
-        overlay: {
-          font_family: "Bangers",
-          font_size: 60,
-          font_weight: "bold",
-          text: encodedMemeText,
-        },
-        gravity: "south",
-        y: 20,
-        color: "#000",
-      };
-
-      const cloudinaryOptionsNew = {
-        transformation: [
-          { crop: "pad" },
-          {
-            overlay: "black_bar",
-            gravity: "south",
-            width: "1.0",
-            height: "0.25",
-            flags: "relative",
-            opacity: 60,
-          },
-          {
-            overlay: {
-              font_family: "Bangers",
-              font_size: 60,
-              text: encodedMemeText,
+      var cloudinaryOptions;
+      if (memeText) {
+        const memeFontSize = memeText.length > 15 ? 40 : 60;
+        const memeY = memeText.length > 15 ? 30 : 25;
+        cloudinaryOptions = {
+          transformation: [
+            { crop: "pad" },
+            {
+              overlay: "black_bar",
+              gravity: "south",
+              width: "1.0",
+              height: "0.25",
+              flags: "relative",
+              opacity: 60,
             },
-            gravity: "south",
-            y: 20,
-            color: "#eee",
-          },
-        ],
-      };
+            {
+              overlay: {
+                font_family: "Bangers",
+                font_size: memeFontSize,
+                text: encodedMemeText,
+              },
+              gravity: "south",
+              y: memeY,
+              color: "#eee",
+            },
+          ],
+        };
+      } else {
+        cloudinaryOptions = {
+          transformation: [
+            { crop: "pad" },
+            {
+              overlay: "black_bar",
+              gravity: "south",
+              width: "1.0",
+              height: "0.1",
+              flags: "relative",
+              opacity: 60,
+            },
+            {
+              overlay: {
+                font_family: "Arial",
+                font_size: 20,
+                text: encodeURI("© Meme Generator"),
+              },
+              gravity: "south_east",
+              y: 20,
+              color: "#eee",
+            },
+          ],
+        };
+      }
 
       console.log({ cloudinaryOptions });
       const cloudinaryImage = await cloudinary.uploader.upload(
         editedImage,
-        cloudinaryOptionsNew,
+        cloudinaryOptions,
         function (error, result) {
           console.log(result, error);
           console.log({ result });
