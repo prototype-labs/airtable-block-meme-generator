@@ -41,6 +41,11 @@ function MemeGeneratorBlock() {
   memeFieldId = globalConfig.get("memeFieldId");
   memeField = table ? table.getFieldByIdIfExists(memeFieldId) : null;
 
+  const memeTextFieldId = globalConfig.get("memeTextFieldId");
+  const memeTextField = table
+    ? table.getFieldByIdIfExists(memeTextFieldId)
+    : null;
+
   removeBgApiKey = globalConfig.get("removeBgApiKey");
   cloudinaryUrl = globalConfig.get("cloudinaryUrl");
 
@@ -56,7 +61,7 @@ function MemeGeneratorBlock() {
     });
   }
   const records = useRecords(view, {
-    fields: [imageField, backgroundImageField],
+    fields: [imageField, backgroundImageField, memeTextField],
   });
 
   const [isUpdateInProgress, setIsUpdateInProgress] = useState(false);
@@ -73,6 +78,7 @@ function MemeGeneratorBlock() {
       table,
       imageField,
       backgroundImageField,
+      memeTextField,
       records,
       removeBgApiKey
     );
@@ -97,14 +103,6 @@ function MemeGeneratorBlock() {
         />
       </FormField>
 
-      <FormField label="Meme Field">
-        <FieldPickerSynced
-          table={table}
-          globalConfigKey="memeFieldId"
-          placeholder="Pick the field for Meme"
-          allowedTypes={[FieldType.MULTIPLE_ATTACHMENTS]}
-        />
-      </FormField>
       <FormField label="Background Image Field">
         <FieldPickerSynced
           table={table}
@@ -113,6 +111,25 @@ function MemeGeneratorBlock() {
           allowedTypes={[FieldType.MULTIPLE_ATTACHMENTS]}
         />
       </FormField>
+
+      <FormField label="Text field">
+        <FieldPickerSynced
+          table={table}
+          globalConfigKey="memeTextFieldId"
+          placeholder="Pick the field for meme text"
+          allowedTypes={[FieldType.SINGLE_LINE_TEXT]}
+        />
+      </FormField>
+
+      <FormField label="Meme Field">
+        <FieldPickerSynced
+          table={table}
+          globalConfigKey="memeFieldId"
+          placeholder="Pick the field for Meme"
+          allowedTypes={[FieldType.MULTIPLE_ATTACHMENTS]}
+        />
+      </FormField>
+
       <FormField label="Remove BG API Key">
         <InputSynced
           globalConfigKey="removeBgApiKey"
@@ -152,6 +169,7 @@ async function getImageUpdatesAsync(
   table,
   imageField,
   backgroundImageField,
+  memeTextField,
   records,
   removeBgApiKey
 ) {
@@ -161,6 +179,7 @@ async function getImageUpdatesAsync(
     const backgroundImageAttachmentCellValue = record.getCellValue(
       backgroundImageField
     );
+    const memeText = record.getCellValue(memeTextField);
 
     const imageUrl = imageAttachmentCellValue
       ? imageAttachmentCellValue[0]["url"]
@@ -199,25 +218,49 @@ async function getImageUpdatesAsync(
       const editedImage =
         "data:image/png;base64," + updatedImage.data.result_b64;
       console.log({ editedImage });
+      const encodedMemeText = encodeURI(memeText);
 
       const cloudinaryOptions = {
         crop: "pad",
         overlay: {
-          font_family: "Arial",
-          font_size: 20,
+          font_family: "Bangers",
+          font_size: 60,
           font_weight: "bold",
-          text: "ITS%20FINE",
+          text: encodedMemeText,
         },
-        gravity: "south_east",
-        x: 20,
+        gravity: "south",
         y: 20,
-        color: "#eee",
+        color: "#000",
+      };
+
+      const cloudinaryOptionsNew = {
+        transformation: [
+          { crop: "pad" },
+          {
+            overlay: "black_bar",
+            gravity: "south",
+            width: "1.0",
+            height: "0.25",
+            flags: "relative",
+            opacity: 60,
+          },
+          {
+            overlay: {
+              font_family: "Bangers",
+              font_size: 60,
+              text: encodedMemeText,
+            },
+            gravity: "south",
+            y: 20,
+            color: "#eee",
+          },
+        ],
       };
 
       console.log({ cloudinaryOptions });
       const cloudinaryImage = await cloudinary.uploader.upload(
         editedImage,
-        cloudinaryOptions,
+        cloudinaryOptionsNew,
         function (error, result) {
           console.log(result, error);
           console.log({ result });
