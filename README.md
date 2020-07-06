@@ -39,4 +39,8 @@ Features
 
 ## See the block running
 
-![See super fun meme's being generated here!](media/block.gif)
+![Generated Meme](https://res.cloudinary.com/dlgztvq9v/image/upload/v1594046323/meme1.png)
+
+-----
+
+![Meme Generator Screenshot](https://res.cloudinary.com/dlgztvq9v/image/upload/v1594046326/meme-generator-screenshot.png)
