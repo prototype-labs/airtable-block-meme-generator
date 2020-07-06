@@ -22,7 +22,7 @@ var cloudinary = require("cloudinary/lib/cloudinary").v2;
 var removeBgApiKey, cloudinaryUrl, memeField, memeFieldId;
 
 viewport.addMinSize({
-  height: 260,
+  height: 350,
   width: 400,
 });
 
